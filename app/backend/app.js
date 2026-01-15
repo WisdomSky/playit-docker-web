@@ -55,7 +55,7 @@ app.listen(port, () => {
   tunnel.start({
     claimLinkCallback(data) {
 
-      console.log('Claim Link: ' + data)
+      console.log('Claim Link: \'' + data +'\'')
 
       let config = getConfig();
 

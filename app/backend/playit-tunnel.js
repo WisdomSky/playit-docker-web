@@ -51,7 +51,7 @@ class PlayitTunnel {
 
             if (data.toString().toLocaleLowerCase().indexOf('visit link to setup') !== -1) {
                 if (!!additionalArgs.claimLinkCallback && typeof additionalArgs.claimLinkCallback === 'function') {
-                    additionalArgs.claimLinkCallback(data.toString().replace(/^.*(https\:\/\/.*)$/,'$1'))
+                    additionalArgs.claimLinkCallback(data.toString().replace(/^.*(https\:\/\/.*)$/,'$1').split('\u001b', 2)[0])
                 }
             }
 
