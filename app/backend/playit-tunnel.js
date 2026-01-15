@@ -35,28 +35,35 @@ class PlayitTunnel {
             return;
         }
 
-        const args = [];
+        const args = ['-s'];
 
         this.running = true;
         this.emitChange("Starting playit");
         this.childProcess = childProcess.spawn(this.playitPath, args);
         this.childProcess.stdout.on('data', (data) => {
 
-            if (data.toString().toLocaleLowerCase().indexOf('invalid secret') !== -1) {
+            const ioData = data.toString('utf8');
+
+            if (ioData.trim().length) {
+                console.log('playit message:' + ioData);
+            }
+
+            if (ioData.toLocaleLowerCase().indexOf('invalid secret') !== -1) {
                 this.stop();
                 fs.unlinkSync(childProcess.execSync(`${this.playitPath} secret-path`).toString('utf8').trim());
                 this.start(additionalArgs);
                 return false;
             }
 
-            if (data.toString().toLocaleLowerCase().indexOf('visit link to setup') !== -1) {
+            if (ioData.toLocaleLowerCase().indexOf('visit link to setup') !== -1) {
                 if (!!additionalArgs.claimLinkCallback && typeof additionalArgs.claimLinkCallback === 'function') {
-                    additionalArgs.claimLinkCallback(data.toString().replace(/^.*(https\:\/\/.*)$/,'$1').split('\u001b', 2)[0])
+                    const claimLink = ioData.replace(/.*(https\:\/\/.*)$/gmi,'$1').trim();
+                    additionalArgs.claimLinkCallback(claimLink)
                 }
             }
 
-            if (data.toString().toLocaleLowerCase().indexOf('program approved') !== -1 ||
-                data.toString().toLocaleLowerCase().indexOf('secret key valid') !== -1) {
+            if (ioData.toLocaleLowerCase().indexOf('program approved') !== -1 ||
+                ioData.toLocaleLowerCase().indexOf('secret key valid') !== -1) {
                 if (!!additionalArgs.claimedCallback && typeof additionalArgs.claimedCallback === 'function') {
                     additionalArgs.claimedCallback()
                 }

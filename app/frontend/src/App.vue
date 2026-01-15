@@ -11,7 +11,7 @@
         <input type="text" name="token" style="text-align: center" v-model="claim" readonly>
       </div>
       <div>
-        <button @click.prevent="goPlayIt">{{ claim.length ? 'Claim' : 'Go to Playit.gg'}}</button>
+        <button @click.prevent="goPlayIt">{{ claim.trim().length ? 'Claim' : 'Go to Playit.gg'}}</button>
       </div>
     </form>
     <div class="credits">
@@ -24,7 +24,7 @@
 
 
 <script setup lang="ts">
-  import { ref, reactive, onBeforeMount } from 'vue'
+import {ref, reactive, onBeforeMount, watch} from 'vue'
 
   const endpoint = "";
 
@@ -37,9 +37,12 @@
   onBeforeMount(async() => await init());
 
   function goPlayIt() {
-    window.location.href = claim.value.length ? claim.value : 'https://playit.gg/account/agents';
+    window.location.href = claim.value.trim().length ? claim.value : 'https://playit.gg/account/agents';
   }
 
+  watch(claim, () => {
+    console.log('claim updated: ', claim.value)
+  })
 
   async function init() {
 
