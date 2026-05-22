@@ -69,7 +69,9 @@ function getConfig() {
   };
   try {
     const json = JSON.parse(fs.readFileSync(configpath));
-    config = json;
+    if (json.secret !== undefined && json.secret.trim().length) {
+      config = json;
+    }
   } catch(e) {
     console.log('No pre-existing config file found.');
   }
