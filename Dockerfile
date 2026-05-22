@@ -17,9 +17,12 @@ RUN apt update && \
     apt install -y gnupg2 && \
     apt install -y ca-certificates
 
-
-
-RUN ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "x86_64") && \
+RUN case "${TARGETARCH}${TARGETVARIANT}" in \
+      arm64)   ARCH="aarch64" ;; \
+      armv7)   ARCH="armv7"   ;; \
+      amd64)   ARCH="amd64"   ;; \
+      *) echo "Unsupported arch: ${TARGETARCH}${TARGETVARIANT}" && exit 1 ;; \
+    esac && \
     curl -fsSL "https://github.com/playit-cloud/playit-agent/releases/download/v${VERSION}/playit-linux-${ARCH}" \
     -o /usr/local/bin/playit && \
     chmod +x /usr/local/bin/playit
