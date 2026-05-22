@@ -24,7 +24,7 @@ class PlayitTunnel {
         }
     }
 
-    start(additionalArgs = {}) {
+    start(secret) {
         if (this.childProcess) {
             this.emitError("Already started");
             return;
@@ -35,11 +35,9 @@ class PlayitTunnel {
             return;
         }
 
-        const args = ['-s'];
-
         this.running = true;
         this.emitChange("Starting playit");
-        this.childProcess = childProcess.spawn(this.playitPath, args);
+        this.childProcess = childProcess.spawn(this.playitPath, ['--secret', secret]);
         this.childProcess.stdout.on('data', (data) => {
 
             const ioData = data.toString('utf8');
@@ -48,26 +46,6 @@ class PlayitTunnel {
                 console.log('playit message:' + ioData);
             }
 
-            if (ioData.toLocaleLowerCase().indexOf('invalid secret') !== -1) {
-                this.stop();
-                fs.unlinkSync(childProcess.execSync(`${this.playitPath} secret-path`).toString('utf8').trim());
-                this.start(additionalArgs);
-                return false;
-            }
-
-            if (ioData.toLocaleLowerCase().indexOf('visit link to setup') !== -1) {
-                if (!!additionalArgs.claimLinkCallback && typeof additionalArgs.claimLinkCallback === 'function') {
-                    const claimLink = ioData.replace(/.*(https\:\/\/.*)$/gmi,'$1').trim();
-                    additionalArgs.claimLinkCallback(claimLink)
-                }
-            }
-
-            if (ioData.toLocaleLowerCase().indexOf('program approved') !== -1 ||
-                ioData.toLocaleLowerCase().indexOf('secret key valid') !== -1) {
-                if (!!additionalArgs.claimedCallback && typeof additionalArgs.claimedCallback === 'function') {
-                    additionalArgs.claimedCallback()
-                }
-            }
         })
 
         this.childProcess.stderr.pipe(process.stderr);

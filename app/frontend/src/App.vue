@@ -3,17 +3,81 @@
     <div>
       <img src="./assets/playit-logo.png" class="playit-logo" alt="Playit.gg">
     </div>
-    <form id="cf-form" method="post" @submit.prevent>
-      <div v-if="claim.length">
-        <div>
-          <h4>Playit.gg Claim URL:</h4>
-        </div>
-        <input type="text" name="token" style="text-align: center" v-model="claim" readonly>
-      </div>
+    <form id="cf-form" method="post" @submit.prevent v-if="!hasSecret">
       <div>
-        <button @click.prevent="goPlayIt">{{ claim.trim().length ? 'Claim' : 'Go to Playit.gg'}}</button>
+        <div style="margin-top: 15px">
+          <h4>SETTING UP PLAYIT.GG AGENT</h4>
+        </div>
+      </div>
+      <div v-if="step == 1">
+        <div>
+          <button @click.prevent="step = 2">Click to Start Setup</button>
+        </div>
+      </div>
+      <div v-if="step == 2" class="step-2">
+        <div>
+          <div>
+            <strong>1. Generate a PlayIt secret key.</strong>
+          </div>
+          <div>
+            <button @click.prevent="getPlayItSecretKey()">Open PlayIt Agent Wizard</button>
+          </div>
+        </div>
+        <div>
+          <div>
+            <strong>1. Choose a name for your docker agent.</strong>
+          </div>
+          <div>
+            <img src="./assets/setup/1.png">
+          </div>
+        </div>
+        <div>
+          <div>
+            <strong>2. Copy the secret key or the docker run command.</strong>
+          </div>
+          <div>
+            <img src="./assets/setup/2.png">
+          </div>
+        </div>
+        <div>
+          <div>
+            <strong>2. Paste it below.</strong>
+          </div>
+          <div>
+              <input type="text" name="token" style="text-align: center" v-model="secret" :disabled="processing" :readonly="processing" placeholder="docker run --rm -it --net=host -e SECRET_KEY=56fde841223eb0c8b04ec6fff7c9e1542d35ab7cf6647bbc08d5a8ca52a7a903 ghcr.io/playit-cloud/playit-agent:0.17">
+          </div>
+          <div v-if="secret.length">
+            <button @click.prevent="startPlayIt()" :disabled="processing">Start PlayIt</button>
+          </div>
+        </div>
+      </div>
+      <div v-if="step == 3" class="step-3">
+        <div>
+          <div>
+            <strong>Once the agent has been setup successfully, the section will become empty. You may now then click the "Exit Wizard" button.</strong>
+          </div>
+          <div>
+            <img src="./assets/setup/3.png">
+          </div>
+        </div>
+        <div>
+          <div>
+            <strong>You can now start creating tunnels for your agent.</strong>
+          </div>
+          <div>
+            <button @click.prevent="createTunnel">Create Tunnel</button>
+          </div>
+        </div>
       </div>
     </form>
+    <div v-else>
+      <div>
+        <span class="status-dot"></span> playit agent is currently running...
+      </div>
+      <div>
+        <button @click.prevent="goPlayIt">Go to Playit.gg</button>
+      </div>
+    </div>
     <div class="credits">
         <a href="https://github.com/WisdomSky/playit-docker-web" title="github.com/WisdomSky/playit-docker-web">
           <img src="https://raw.githubusercontent.com/rdimascio/icons/master/icons/github.svg" style="height: 20px;">
@@ -28,31 +92,63 @@ import {ref, reactive, onBeforeMount, watch} from 'vue'
 
   const endpoint = "";
 
-  const config = reactive<{claim: string}>({claim: ''});
+  const config = reactive<{secret: string}>({secret: ''});
+  const hasSecret = ref<boolean>(false);
 
-  const claim = ref<string>('');
+  const secret = ref<string>('');
 
-  const empty = ref<boolean>(true);
+  const step = ref<number>(1);
+  const processing = ref<boolean>(false);
 
   onBeforeMount(async() => await init());
 
+  watch(secret, () => {
+    const match = secret.value.match(/^.*SECRET_KEY=([^\s]+).*$/);
+    if (match) {
+      secret.value = match[1];
+    }
+  })
+
+
   function goPlayIt() {
-    window.location.href = claim.value.trim().length ? claim.value : 'https://playit.gg/account/agents';
+    window.open('https://playit.gg/account/agents', '_blank');
   }
 
-  watch(claim, () => {
-    console.log('claim updated: ', claim.value)
-  })
+  function startPlayIt() {
+    processing.value = true;
+    fetch(endpoint + '/start', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        secret: secret.value
+      })
+    })
+
+    step.value = 3;
+  }
+
+  function getPlayItSecretKey() {
+    window.open('https://playit.gg/account/setup/wizard/new-account/docker/docker-name', '_blank');
+    step.value = 2;
+  }
+
+
+  function createTunnel() {
+    window.open('https://playit.gg/account/setup/new-tunnel', '_blank');
+    window.location.reload();
+  }
+
 
   async function init() {
 
     const json = await (await fetch(endpoint + '/config')).json();
 
-    config.claim = json.claim;
-    empty.value = config.claim === undefined || config.claim.trim().length === 0;
-    claim.value = config.claim;
+    config.secret = json.secret;
+    secret.value = config.secret;
+    hasSecret.value = config.secret !== undefined && config.secret.trim().length > 0;
 
-    setTimeout(init, 5000);
   }
 
 </script>
@@ -74,6 +170,11 @@ import {ref, reactive, onBeforeMount, watch} from 'vue'
     font-size: 1.25em;
   }
 
+  h4 {
+   margin: 0;
+   color: #FF8B00;
+  }
+
   button {
     margin-top: 20px;
     background-color: #c98816;
@@ -90,7 +191,7 @@ import {ref, reactive, onBeforeMount, watch} from 'vue'
     &:active {
       opacity: 1 !important;
       box-shadow: 0 0 15px 0 #dbb378a0;
-      
+
     }
 
   }
@@ -142,10 +243,42 @@ import {ref, reactive, onBeforeMount, watch} from 'vue'
 
   }
 
+  .step-2, .step-3 {
+    margin-top: 15px;
+    text-align: left;
+
+    & > div {
+      margin-top: 10px;
+    }
+
+    img {
+      width: 100%;
+    }
+  }
+
   .version {
     position: absolute;
     top: 0;
     right: 10px;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: #2ecc40;
+    border-radius: 50%;
+    vertical-align: middle;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
   }
 
 </style>

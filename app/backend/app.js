@@ -28,6 +28,12 @@ app.get('/config', (req, res) => {
   res.status(200).set('Content-Type', 'application/json').send(JSON.stringify(config));
 })
 
+app.post('/start', (req, res) => {
+  let config = getConfig();
+  config.secret = req.body.secret;
+  saveConfig(config);
+  agentStart();
+})
 
 app.get('/new-version', async (req, res) => {
   const current_version = process.env.VERSION;
@@ -51,36 +57,15 @@ app.get('/new-version', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`WebUI running on port ${port}`);
-  console.log('Starting playit tunnel.');
-  tunnel.start({
-    claimLinkCallback(data) {
 
-      console.log('Claim Link: \'' + data +'\'')
+  agentStart();
 
-      let config = getConfig();
-
-      config.claim = data.trim();
-
-      saveConfig(config);
-
-
-    },
-    claimedCallback() {
-      console.log('Playit secret key valid.')
-
-      let config = getConfig();
-
-      config.claim = '';
-
-      saveConfig(config);
-    }
-  });
 })
 
 
 function getConfig() {
   let config = {
-    claim: ''
+    secret: ''
   };
   try {
     const json = JSON.parse(fs.readFileSync(configpath));
@@ -94,4 +79,13 @@ function getConfig() {
 
 function saveConfig(config) {
   fs.writeFileSync(configpath, JSON.stringify(config, null, 2) + "\n");
+}
+
+
+function agentStart() {
+  let config = getConfig();
+  if (config.secret.trim().length) {
+    console.log('Starting playit agent.');
+    tunnel.start(config.secret);
+  }
 }
