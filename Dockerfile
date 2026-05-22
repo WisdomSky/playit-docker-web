@@ -1,4 +1,4 @@
-FROM node:18-bookworm-slim
+FROM node:18-bullseye-slim
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -12,14 +12,19 @@ EXPOSE ${WEBUI_PORT}
 USER root
 WORKDIR /var/app
 
-RUN apt update && \
-    apt install -y curl && \
-    apt install -y gnupg2
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null && \
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | tee /etc/apt/sources.list.d/playit-cloud.list && \
-    apt update && \
-    apt install -y playit
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /etc/apt/keyrings/playit.gpg
+
+RUN echo "deb [signed-by=/etc/apt/keyrings/playit.gpg] https://playit-cloud.github.io/ppa/data stable main" \
+    > /etc/apt/sources.list.d/playit.list
+
+RUN apt-get update && apt-get install -y playit
 
 VOLUME /config
 
