@@ -1,9 +1,13 @@
-# playit-docker-web
+# [PlayIt.gg-docker-web](https://hub.docker.com/r/wisdomsky/playit-docker-web)
 
-_playit-docker-web is a docker image that packages both playit-cli and a no-frills Web UI for an easier way of setting up your playit tunnel._
+_playit-docker-web is a docker image that packages both [playit-cli](https://github.com/playit-cloud/playit-agent) and a no-frills Web UI for an easier way of setting up your playit tunnel._
 
-https://hub.docker.com/r/wisdomsky/playit-docker-web
 
+
+[![build](https://github.com/WisdomSky/playit-docker-web/actions/workflows/publish.yml/badge.svg)](https://github.com/WisdomSky/playit-docker-web/actions "Build Status")
+[![latest](https://img.shields.io/docker/v/wisdomsky/playit-docker-web/latest?label=Latest)](https://hub.docker.com/r/wisdomsky/playit-docker-web/tags "Latest Tag")
+[![pulls](https://img.shields.io/docker/pulls/wisdomsky/playit-docker-web?label=Pulls)](https://hub.docker.com/r/wisdomsky/playit-docker-web "Docker Hub Pulls")
+[![stars](https://img.shields.io/docker/stars/wisdomsky/playit-docker-web?label=%E2%AD%90)](https://hub.docker.com/r/wisdomsky/playit-docker-web "Docker Hub Stars")
 
 --- 
 ## Application Setup
