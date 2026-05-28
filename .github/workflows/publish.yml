@@ -34,4 +34,4 @@ jobs:
           push: true
           tags: |
             wisdomsky/playit-docker-web:latest
-            wisdomsky/playit-docker-web:1.0.4
+            wisdomsky/playit-docker-web:1.0.5
