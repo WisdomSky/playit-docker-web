@@ -66,6 +66,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Bump playit-agent version to ${{ steps.latest_release.outputs.latest_version }}"
+          committer: WisdomSky <i.wisdomsky@gmail.com>
+          author: WisdomSky <i.wisdomsky@gmail.com>
           title: "chore: Update playit-agent to v${{ steps.latest_release.outputs.latest_version }}"
           body: |
             Automated version update for playit-agent
