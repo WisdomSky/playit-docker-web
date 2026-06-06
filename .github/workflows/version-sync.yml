@@ -1,0 +1,79 @@
+name: Update playit-agent version
+
+on:
+  schedule:
+    # Check for new releases daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest release from playit-agent
+        id: latest_release
+        run: |
+          # Fetch the latest release tag from playit-agent repo
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/playit-cloud/playit-agent/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          echo "Latest version: $LATEST_VERSION"
+          
+          # Validate version matches pattern ^\d+\.\d+\.\d+$
+          if [[ ! $LATEST_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version does not match pattern: $LATEST_VERSION"
+            exit 1
+          fi
+          
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get current version from Dockerfile
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep -oP '(?<=ARG VERSION=).*' Dockerfile)
+          echo "Current version: $CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if update is needed
+        id: check_update
+        run: |
+          if [ "${{ steps.latest_release.outputs.latest_version }}" != "${{ steps.current_version.outputs.current_version }}" ]; then
+            echo "Update needed from ${{ steps.current_version.outputs.current_version }} to ${{ steps.latest_release.outputs.latest_version }}"
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Already at latest version: ${{ steps.current_version.outputs.current_version }}"
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update VERSION in Dockerfiles
+        if: steps.check_update.outputs.update_needed == 'true'
+        run: |
+          NEW_VERSION="${{ steps.latest_release.outputs.latest_version }}"
+          
+          # Update main Dockerfile
+          sed -i "s/ARG VERSION=.*/ARG VERSION=$NEW_VERSION/" Dockerfile
+          
+          # Update dev/Dockerfile
+          sed -i "s/ARG VERSION=.*/ARG VERSION=$NEW_VERSION/" dev/Dockerfile
+          
+          echo "Updated Dockerfiles to version $NEW_VERSION"
+
+      - name: Create Pull Request
+        if: steps.check_update.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Bump playit-agent version to ${{ steps.latest_release.outputs.latest_version }}"
+          title: "chore: Update playit-agent to v${{ steps.latest_release.outputs.latest_version }}"
+          body: |
+            Automated version update for playit-agent
+            
+            - Previous version: ${{ steps.current_version.outputs.current_version }}
+            - New version: ${{ steps.latest_release.outputs.latest_version }}
+            
+            Release notes: https://github.com/playit-cloud/playit-agent/releases/tag/v${{ steps.latest_release.outputs.latest_version }}
+          branch: update-playit-version-${{ steps.latest_release.outputs.latest_version }}
+          delete-branch: true
