@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get latest release from playit-agent
         id: latest_release
@@ -63,6 +61,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check_update.outputs.update_needed == 'true'
+        id: create_pr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -77,3 +76,10 @@ jobs:
             Release notes: https://github.com/playit-cloud/playit-agent/releases/tag/v${{ steps.latest_release.outputs.latest_version }}
           branch: update-playit-version-${{ steps.latest_release.outputs.latest_version }}
           delete-branch: true
+
+      - name: Enable auto-merge
+        if: steps.check_update.outputs.update_needed == 'true' && steps.create_pr.outputs.pull-request-number
+        run: |
+          gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} --auto --merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
