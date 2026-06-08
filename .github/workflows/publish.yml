@@ -1,9 +1,10 @@
 name: publish-image
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
-      - "main"
+      - main
   workflow_dispatch:
 
 jobs:
